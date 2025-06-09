@@ -1,35 +1,21 @@
-# Multi-stage build for optimized image
-FROM node:18-alpine AS builder
+FROM node:20-alpine
 
+# Set working directory
 WORKDIR /app
 
-# Copy package files first (better caching)
+# Add package files
 COPY package*.json ./
 
-# Install ALL dependencies (including devDependencies for build)
-RUN npm ci
+# Install dependencies with better error handling
+RUN npm install --only=production && npm cache clean --force
 
-# Copy source code
+# Copy application code
 COPY . .
 
-# Production stage
-FROM node:18-alpine AS production
-
-# Add metadata
-LABEL maintainer="ArgoCD Demo"
-LABEL description="Demo application for ArgoCD GitOps"
-
-# Create app user
+# Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-WORKDIR /app
-
-# Copy only production dependencies and built app
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/server.js ./
-COPY --from=builder /app/public ./public
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -41,10 +27,10 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
-# Switch to app user
-USER nextjs
+# Switch to non-root user
+USER nodejs
 
-# Start the application
+# Start application
 CMD ["npm", "start"]
