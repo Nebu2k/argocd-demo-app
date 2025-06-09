@@ -7,6 +7,7 @@ on:
       - 'server.js'
       - 'package.json'
       - 'Dockerfile'
+      - 'public/**'
   workflow_dispatch:
     inputs:
       version:
@@ -14,9 +15,15 @@ on:
         required: true
         default: 'v1.0.0'
 
+# Wichtig: Permissions für GITHUB_TOKEN setzen
+permissions:
+  contents: write
+  packages: write
+
 env:
   DOCKER_USERNAME: nebu2k
   IMAGE_NAME: argocd-demo-app
+  REGISTRY: docker.io
 
 jobs:
   build-and-push:
@@ -24,13 +31,18 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        # Wichtig: Token für Push-Berechtigung verwenden
+        token: ${{ secrets.GITHUB_TOKEN }}
       
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      
+        
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
+        registry: ${{ env.REGISTRY }}
         username: ${{ env.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
         
@@ -42,24 +54,39 @@ jobs:
         else
           echo "VERSION=v$(date +%Y%m%d)-$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
         fi
+        echo "Generated version: $(cat $GITHUB_OUTPUT)"
         
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: ./Dockerfile
         push: true
+        platforms: linux/amd64
         tags: |
           ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
           ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          NODE_ENV=production
+          APP_VERSION=${{ steps.version.outputs.VERSION }}
           
     - name: Update Kubernetes deployment
       run: |
         sed -i 's|image: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:.*|image: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}|' k8s/deployment.yaml
+        echo "Updated deployment.yaml:"
+        cat k8s/deployment.yaml | grep image:
         
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add k8s/deployment.yaml
-        git commit -m "🚀 Auto-update image to ${{ steps.version.outputs.VERSION }}" || exit 0
-        git push
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "🚀 Auto-update image to ${{ steps.version.outputs.VERSION }}"
+          # Verwende GITHUB_TOKEN für Push
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+        fi
