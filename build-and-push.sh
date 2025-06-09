@@ -4,7 +4,7 @@
 set -e
 
 # Configuration
-DOCKER_USERNAME="speters"  # Ersetzen Sie mit Ihrem Docker Hub Username
+DOCKER_USERNAME="nebu2k"  # Ersetzen Sie mit Ihrem Docker Hub Username
 IMAGE_NAME="argocd-demo-app"
 VERSION=${1:-"v1.0.0"}
 
