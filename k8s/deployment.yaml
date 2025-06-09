@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: demo-app
-        image: nebu2k/argocd-demo-app:v1.0.0  # Ersetzen Sie 'speters' mit Ihrem Docker Hub Username
+        image: nebu2k/argocd-demo-app:v1.0.0
         ports:
         - containerPort: 3000
           name: http
