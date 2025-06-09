@@ -5,6 +5,7 @@ metadata:
   namespace: demo-app
   labels:
     app: demo-app
+    component: service
 spec:
   type: ClusterIP
   ports:
