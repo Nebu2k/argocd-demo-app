@@ -3,11 +3,14 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first (better caching)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies for build)
+RUN npm ci
+
+# Copy source code
+COPY . .
 
 # Production stage
 FROM node:18-alpine AS production
@@ -22,9 +25,11 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /app
 
-# Copy dependencies and app code
+# Copy only production dependencies and built app
 COPY --from=builder /app/node_modules ./node_modules
-COPY --chown=nextjs:nodejs . .
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/server.js ./
+COPY --from=builder /app/public ./public
 
 # Set environment variables
 ENV NODE_ENV=production
