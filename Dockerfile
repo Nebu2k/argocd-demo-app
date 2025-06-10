@@ -20,7 +20,7 @@ RUN addgroup -g 1001 -S nodejs && \
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV APP_VERSION=1.0.0
+ENV APP_VERSION=auto
 
 # Expose port
 EXPOSE 3000
