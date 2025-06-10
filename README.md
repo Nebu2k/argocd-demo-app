@@ -1,17 +1,19 @@
 # ArgoCD Demo App 🚀
 
-Eine vollständige Node.js Web-Anwendung zur Demonstration von GitOps mit ArgoCD, inklusive automatisierter CI/CD Pipeline mit GitHub Actions.
+Eine vollständige Node.js Web-Anwendung zur Demonstration von GitOps mit ArgoCD, inklusive automatisierter CI/CD Pipeline mit GitHub Actions und robuster Versionierung.
 
 ## 📋 Übersicht
 
 Diese App demonstriert einen modernen GitOps-Workflow:
 
 - ✅ **Automatische Builds** mit GitHub Actions
+- ✅ **Intelligente Versionierung** (Datum + Git-Hash Format)
 - ✅ **Docker Multi-Platform Images** (amd64/arm64)
 - ✅ **Zero-Downtime Deployments** mit Kubernetes
 - ✅ **Automatische Synchronisation** durch ArgoCD
 - ✅ **Security Best Practices** (Non-root Container, Health Checks)
 - ✅ **Responsive Web UI** mit Real-time API
+- ✅ **Robuste Change Detection** für selektive Builds
 
 ## 🛠️ Lokale Entwicklung
 
@@ -68,22 +70,41 @@ curl http://localhost:3000/health
 Die Pipeline wird automatisch getriggert bei:
 
 - Push auf `main` Branch
-- Änderungen an: `server.js`, `package.json`, `Dockerfile`, `public/**`
+- Änderungen an: `server.js`, `package.json`, `Dockerfile`, `public/**`, `k8s/**`
 - Manueller Trigger über GitHub UI
 
+**Intelligente Change Detection:**
+- **Code-Änderungen** → Docker Build + K8s Update
+- **K8s-Only Änderungen** → Nur Notification (kein Build)
+- **Robuste Versionierung** → Funktioniert auch bei ersten Commits
+
 ```bash
-# Manuelle Versionierung
+# Manuelle Versionierung mit spezifischer Version
 gh workflow run "Build and Deploy" -f version=v2.0.0
+
+# Automatische Versionierung (Standard)
+# Format: v20250610-abc1234 (Datum + Git-Hash)
 ```
 
-### Pipeline Schritte
+### Pipeline Features
 
-1. **Code Checkout** - Repository auschecken
-2. **Docker Build** - Multi-Platform Image erstellen
-3. **Registry Push** - Upload zu Docker Hub
-4. **K8s Update** - Deployment Manifest aktualisieren
-5. **Git Commit** - Automatischer Commit der Änderungen
-6. **ArgoCD Sync** - Automatische Erkennung & Deployment
+1. **Smart Change Detection** - Erkennt Code vs. K8s Änderungen
+2. **Automatische Versionierung** - Datum + Git-Hash Format
+3. **Docker Build** - Multi-Platform Image erstellen
+4. **Registry Push** - Upload zu Docker Hub
+5. **K8s Update** - Nur relevante Felder in deployment.yaml
+6. **Git Commit** - Automatischer Commit der Image-Updates
+7. **ArgoCD Sync** - Automatische Erkennung & Deployment
+
+### Versionierungs-Schema
+
+```bash
+# Automatisch generiert:
+v20250610-c4dffd7  # Format: vYYYYMMDD-{git-hash}
+
+# Manuelle Eingabe:
+v2.0.0             # Semantic Versioning
+```
 
 ## 📦 Kubernetes Deployment
 
@@ -161,14 +182,17 @@ argocd app create demo-app \
 
 1. **Code ändern** → `server.js` modifizieren
 2. **Git Push** → `git push origin main`
-3. **GitHub Action** → Automatischer Build & Push
-4. **ArgoCD Sync** → Deployment auf Cluster
-5. **Rolling Update** → Zero-Downtime Update
+3. **Smart Detection** → Pipeline erkennt Art der Änderung
+4. **GitHub Action** → Automatischer Build & Push (nur bei Code-Änderungen)
+5. **K8s Update** → Deployment wird automatisch aktualisiert
+6. **ArgoCD Sync** → Deployment auf Cluster
+7. **Rolling Update** → Zero-Downtime Update
 
-### Beispiel: Version Update
+### Beispiel-Workflows
 
+#### Code-Änderung (Vollständiger Build):
 ```bash
-# 1. Code ändern
+# 1. Feature entwickeln
 echo "console.log('New feature!');" >> server.js
 
 # 2. Commit & Push
@@ -176,8 +200,36 @@ git add .
 git commit -m "feat: Add new feature"
 git push origin main
 
-# 3. GitHub Action läuft automatisch
-# 4. ArgoCD erkennt Änderungen automatisch
+# 3. Pipeline läuft automatisch:
+# → Neue Version: v20250610-abc1234
+# → Docker Build & Push
+# → deployment.yaml Update
+# → ArgoCD Sync
+```
+
+#### K8s-Only Änderung (Kein Build):
+```bash
+# 1. Kubernetes-Config ändern
+kubectl edit deployment demo-app -n demo-app
+# oder: vim k8s/deployment.yaml
+
+# 2. Commit & Push
+git add k8s/
+git commit -m "config: Increase replica count"
+git push origin main
+
+# 3. Pipeline erkennt K8s-Only:
+# → Kein Docker Build
+# → Direkte ArgoCD Sync
+```
+
+### Versionierungs-Beispiele
+
+| Trigger | Version | Beschreibung |
+|---------|---------|-------------|
+| Automatisch | `v20250610-c4dffd7` | Datum + Git-Hash |
+| Manuell | `v2.0.0` | Semantic Versioning |
+| Hotfix | `v20250610-hotfix` | Custom Tag |
 # 5. Rolling Update ohne Downtime
 ```
 
@@ -268,13 +320,48 @@ argocd app sync demo-app
 argocd app get demo-app
 ```
 
-## 📈 Roadmap
+**Pipeline Change Detection Fehler:**
 
+```bash
+# Bei ersten Commits kann HEAD~1 fehlen
+# ✅ Pipeline ist jetzt robust gegen dieses Problem
+# ✅ Automatischer Fallback auf git ls-files
+```
+
+## 🎯 Live Demo & Status
+
+**Demo URL:** <https://demo.elmstreet79.de>
+
+**Aktuelle Version:** `v20250610-c4dffd7` (automatisch generiert)
+
+**Pipeline Status:** ![Build Status](https://github.com/Nebu2k/argocd-demo-app/workflows/Build%20and%20Deploy/badge.svg)
+
+### Aktuelle Konfiguration
+
+- **Namespace:** `demo-app`
+- **Replicas:** 2 Pods
+- **Image:** `nebu2k/argocd-demo-app:v20250610-c4dffd7`
+- **Ingress:** TLS mit cert-manager (demo.elmstreet79.de)
+- **Resources:** 50m CPU / 64Mi Memory (Request)
+- **Health Checks:** Liveness + Readiness Probes
+
+## 📈 Roadmap & Verbesserungen
+
+### ✅ Bereits implementiert
+- [x] **Automatische Versionierung** - Datum + Git-Hash Format
+- [x] **Robuste Change Detection** - Code vs. K8s Änderungen
+- [x] **Security Best Practices** - Non-root Container
+- [x] **Health Checks** - Liveness + Readiness Probes
+- [x] **TLS/SSL** - Automatische Zertifikate mit cert-manager
+- [x] **Rolling Updates** - Zero-Downtime Deployments
+
+### 🚧 In Planung
 - [ ] **Prometheus Metrics** - Custom App Metrics
 - [ ] **Grafana Dashboard** - Visualisierung
 - [ ] **Helm Charts** - Templating Support
 - [ ] **Multi-Environment** - Dev/Staging/Prod
 - [ ] **Blue/Green Deployment** - Advanced Deployment Strategies
+- [ ] **Kustomize Integration** - Environment-specific Overlays
 
 ## 🤝 Contributing
 
@@ -288,11 +375,27 @@ argocd app get demo-app
 
 Dieses Projekt steht unter der MIT License - siehe [LICENSE](LICENSE) file für Details.
 
-## 🎯 Live Demo
-
-**Demo URL:** <https://demo.elmstreet79.de>
-**Status:** ![Build Status](https://github.com/Nebu2k/argocd-demo-app/workflows/Build%20and%20Deploy/badge.svg)
-
 ---
+
+## 🎯 Quick Start Summary
+
+```bash
+# 1. Repository klonen
+git clone https://github.com/Nebu2k/argocd-demo-app.git
+cd argocd-demo-app
+
+# 2. Lokal testen
+npm install && npm start
+
+# 3. Änderung machen
+echo "// New feature" >> server.js
+
+# 4. Deployen
+git add . && git commit -m "feat: New feature" && git push
+
+# 5. Automatisch deployed! 🚀
+# Version: v20250610-abc1234
+# URL: https://demo.elmstreet79.de
+```
 
 **GitOps in Action! 🚀** - Jede Änderung in Git wird automatisch auf den Kubernetes Cluster deployed.
