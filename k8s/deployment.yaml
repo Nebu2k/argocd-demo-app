@@ -30,11 +30,11 @@ spec:
           name: http
         env:
         - name: NODE_ENV
-          value: "20250610-c4dffd7"
+          value: "production"
         - name: APP_VERSION
           value: "20250610-c4dffd7"
         - name: PORT
-          value: "20250610-c4dffd7"
+          value: "3000"
         resources:
           requests:
             memory: "64Mi"

@@ -112,16 +112,16 @@ jobs:
         VERSION_CLEAN=$(echo "${{ steps.version.outputs.VERSION }}" | sed 's/^v//')
         sed -i "s|version: v.*|version: v${VERSION_CLEAN}|g" k8s/deployment.yaml
         
-        # Update APP_VERSION environment variable
-        sed -i "s|value: \".*\"|value: \"${VERSION_CLEAN}\"|" k8s/deployment.yaml | grep -A1 "APP_VERSION" || true
+        # Update nur APP_VERSION environment variable (nicht NODE_ENV oder PORT)
+        sed -i "/APP_VERSION/{n; s|value: \".*\"|value: \"${VERSION_CLEAN}\"|;}" k8s/deployment.yaml
         
         echo "Updated deployment.yaml:"
         echo "=== Image ==="
         cat k8s/deployment.yaml | grep image:
         echo "=== Version Labels ==="
         cat k8s/deployment.yaml | grep "version:"
-        echo "=== APP_VERSION ==="
-        cat k8s/deployment.yaml | grep -A1 "APP_VERSION"
+        echo "=== Environment Variables ==="
+        cat k8s/deployment.yaml | grep -A1 -B1 "APP_VERSION\|NODE_ENV\|PORT"
         
     - name: Commit and push changes
       run: |
