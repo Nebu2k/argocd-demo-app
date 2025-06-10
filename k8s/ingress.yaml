@@ -13,10 +13,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - demo.elmstreet79.de  # Ersetzen Sie mit Ihrer gewünschten Subdomain
+    - demo.elmstreet79.de
     secretName: demo-app-tls
   rules:
-  - host: demo.elmstreet79.de  # Ersetzen Sie mit Ihrer gewünschten Subdomain
+  - host: demo.elmstreet79.de
     http:
       paths:
       - path: /
