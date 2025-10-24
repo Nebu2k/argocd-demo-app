@@ -104,7 +104,7 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        platforms: linux/amd64
+        platforms: linux/amd64,linux/arm64
         tags: |
           ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
           ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
