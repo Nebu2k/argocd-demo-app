@@ -5,7 +5,7 @@ metadata:
   namespace: demo-app
   labels:
     app: demo-app
-    version: v20250619-a3942f2
+    version: v20251024-f2704b7
 spec:
   replicas: 2
   strategy:
@@ -20,11 +20,11 @@ spec:
     metadata:
       labels:
         app: demo-app
-        version: v20250619-a3942f2
+        version: v20251024-f2704b7
     spec:
       containers:
       - name: demo-app
-        image: nebu2k/argocd-demo-app:v20250619-a3942f2
+        image: nebu2k/argocd-demo-app:v20251024-f2704b7
         ports:
         - containerPort: 3000
           name: http
@@ -32,7 +32,7 @@ spec:
         - name: NODE_ENV
           value: "production"
         - name: APP_VERSION
-          value: "20250619-a3942f2"
+          value: "20251024-f2704b7"
         - name: PORT
           value: "3000"
         resources:
