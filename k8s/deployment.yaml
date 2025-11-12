@@ -22,6 +22,10 @@ spec:
         app: demo-app
         version: v20251024-f2704b7
     spec:
+      # Schedule only on worker nodes
+      nodeSelector:
+        node-role.kubernetes.io/worker: "worker"
+      
       containers:
       - name: demo-app
         image: nebu2k/argocd-demo-app:v20251024-f2704b7
